@@ -1,25 +1,12 @@
 # ==========================================
 # MAIN APPLICATION
 # ==========================================
-# 1. Import the necessary modules and functions.
-# 2. Create and configure the Flask application.
-# 3. Register the application routes.
-# 4. Set up any required startup tasks.
-# 5. Start the Flask development server.
+# Collect book information, create book records,
+# and display them to the user.
 # ==========================================
 
 
-
-# ==========================================
-# REQUIREMENT 1: CREATE A BOOK RECORD
-# ==========================================
-# 1. Ask the user to enter the book's title.
-# 2. Ask the user to enter the author's name.
-# 3. Store the information in a dictionary.
-# 4. Display the complete book record.
-# ==========================================
-
-
+from database import save_book
 # ==========================================
 # COLLECT BOOK INFORMATION
 # ==========================================
@@ -52,3 +39,12 @@ print("----------------")
 print(f"Title: {book['title']}")
 print(f"Author: {book['author']}")
 
+# ==========================================
+# SAVE THE BOOK TO THE DATABASE
+# ==========================================
+
+# Send the book record to database.py to be saved
+save_book(book)
+
+# Confirm that the book was saved
+print("\nBook saved successfully!")
