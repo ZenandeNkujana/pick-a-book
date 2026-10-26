@@ -1,3 +1,4 @@
+
 # ==========================================
 # DATABASE CONNECTION AND SETUP
 # ==========================================
@@ -20,30 +21,61 @@
 # 4. Commit changes and close the connection.
 # ==========================================
 
-
 import sqlite3
 
 
 # ==========================================
-# INITIALIZE THE DATABASE
+# DATABASE CONNECTION
+# ==========================================
+
+def get_connection():
+    # Connect to the SQLite database file.
+    connection = sqlite3.connect("books.db")
+
+    # Return rows as dictionaries accessible by column name.
+    connection.row_factory = sqlite3.Row
+
+    return connection
+
+
+# ==========================================
+# DATABASE INITIALIZATION
 # ==========================================
 
 def initialize_database():
-    # Connect to the database file.
-    connection = sqlite3.connect("books.db")
-
     # Create the books table if it does not exist.
-    connection.execute("""
-        CREATE TABLE IF NOT EXISTS books (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            author TEXT NOT NULL
-        )
-    """)
+    with get_connection() as connection:
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS books (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                author TEXT NOT NULL,
+                progress INTEGER NOT NULL DEFAULT 0,
+                favourite INTEGER NOT NULL DEFAULT 0,
+                completed INTEGER NOT NULL DEFAULT 0
+            )
+        """)
 
-    # Save the database changes and close the connection.
-    connection.commit()
-    connection.close()
+        # Add new columns when upgrading an existing database.
+        existing_columns = {
+            row["name"]
+            for row in connection.execute("PRAGMA table_info(books)")
+        }
+
+        if "progress" not in existing_columns:
+            connection.execute(
+                "ALTER TABLE books ADD COLUMN progress INTEGER NOT NULL DEFAULT 0"
+            )
+
+        if "favourite" not in existing_columns:
+            connection.execute(
+                "ALTER TABLE books ADD COLUMN favourite INTEGER NOT NULL DEFAULT 0"
+            )
+
+        if "completed" not in existing_columns:
+            connection.execute(
+                "ALTER TABLE books ADD COLUMN completed INTEGER NOT NULL DEFAULT 0"
+            )
 
 
 # ==========================================
@@ -51,21 +83,113 @@ def initialize_database():
 # ==========================================
 
 def save_book(book):
-    # Ensure the database and table are ready.
+    # Ensure the database table is ready.
     initialize_database()
 
-    # Connect to the database file.
-    connection = sqlite3.connect("books.db")
-
     # Insert the book information into the table.
-    connection.execute(
-        "INSERT INTO books (title, author) VALUES (?, ?)",
-        (book["title"], book["author"])
-    )
+    with get_connection() as connection:
+        connection.execute(
+            "INSERT INTO books (title, author) VALUES (?, ?)",
+            (book["title"], book["author"])
+        )
 
-    # Save the changes and close the connection.
-    connection.commit()
-    connection.close()
+
+# ==========================================
+# RETRIEVE ALL SAVED BOOKS
+# ==========================================
+
+def get_all_books():
+    # Retrieve all book records from the database.
+    with get_connection() as connection:
+        rows = connection.execute(
+            "SELECT * FROM books ORDER BY id"
+        ).fetchall()
+
+        # Convert database rows into dictionaries.
+        return [dict(row) for row in rows]
+
+
+# ==========================================
+# RETRIEVE A BOOK BY ITS ID
+# ==========================================
+
+def get_book_by_id(book_id):
+    # Find the book matching the supplied ID.
+    with get_connection() as connection:
+        row = connection.execute(
+            "SELECT * FROM books WHERE id = ?",
+            (book_id,)
+        ).fetchone()
+
+        # Return the book record if it exists.
+        return dict(row) if row else None
+
+
+# ==========================================
+# UPDATE READING PROGRESS
+# ==========================================
+
+def update_reading_progress(book_id, progress):
+    # Update the reading progress for the selected book.
+    with get_connection() as connection:
+        connection.execute(
+            """
+            UPDATE books
+            SET progress = ?, completed = ?
+            WHERE id = ?
+            """,
+            (progress, 1 if progress == 100 else 0, book_id)
+        )
+
+
+# ==========================================
+# UPDATE FAVOURITE STATUS
+# ==========================================
+
+def toggle_favourite(book_id):
+    # Switch the selected book's favourite status.
+    with get_connection() as connection:
+        connection.execute(
+            """
+            UPDATE books
+            SET favourite = CASE
+                WHEN favourite = 1 THEN 0
+                ELSE 1
+            END
+            WHERE id = ?
+            """,
+            (book_id,)
+        )
+
+
+# ==========================================
+# MARK A BOOK AS COMPLETED
+# ==========================================
+
+def mark_book_as_completed(book_id):
+    # Mark the selected book as completed.
+    with get_connection() as connection:
+        connection.execute(
+            """
+            UPDATE books
+            SET completed = 1, progress = 100
+            WHERE id = ?
+            """,
+            (book_id,)
+        )
+
+
+# ==========================================
+# DELETE A BOOK
+# ==========================================
+
+def delete_book(book_id):
+    # Delete the selected book from the database.
+    with get_connection() as connection:
+        connection.execute(
+            "DELETE FROM books WHERE id = ?",
+            (book_id,)
+        )
 
 
 # ==========================================
