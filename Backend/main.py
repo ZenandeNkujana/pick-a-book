@@ -5,7 +5,7 @@
 # Collect book information, create book records,
 # and allow the user to manage their library.
 # ==========================================
-
+#Terminal applicaction-Command line application
 
 from database import (
     save_book,
@@ -19,7 +19,7 @@ from database import (
 
 
 # ==========================================
-# REQUIREMENT 5: DISPLAY ALL SAVED BOOKS
+# DISPLAY ALL SAVED BOOKS
 # ==========================================
 
 def view_books():
